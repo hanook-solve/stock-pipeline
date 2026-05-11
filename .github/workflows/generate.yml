@@ -1,0 +1,77 @@
+name: Stock Image Generator
+
+on:
+  schedule:
+    # Runs every day at 6:00 AM Pakistan time (1:00 AM UTC)
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    # Also allows manual trigger from GitHub
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create credentials.json from secret
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+
+      - name: Create .env file from secrets
+        run: |
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+          echo "DRIVE_FOLDER_ID=${{ secrets.DRIVE_FOLDER_ID }}" >> .env
+          echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
+          echo "HF_TOKEN1=${{ secrets.HF_TOKEN1 }}" >> .env
+          echo "HF_TOKEN2=${{ secrets.HF_TOKEN2 }}" >> .env
+          echo "HF_TOKEN3=${{ secrets.HF_TOKEN3 }}" >> .env
+          echo "HF_TOKEN4=${{ secrets.HF_TOKEN4 }}" >> .env
+          echo "HF_TOKEN5=${{ secrets.HF_TOKEN5 }}" >> .env
+          echo "HF_TOKEN6=${{ secrets.HF_TOKEN6 }}" >> .env
+          echo "HF_TOKEN7=${{ secrets.HF_TOKEN7 }}" >> .env
+          echo "HF_TOKEN8=${{ secrets.HF_TOKEN8 }}" >> .env
+          echo "HF_TOKEN9=${{ secrets.HF_TOKEN9 }}" >> .env
+          echo "HF_TOKEN10=${{ secrets.HF_TOKEN10 }}" >> .env
+          echo "HF_TOKEN11=${{ secrets.HF_TOKEN11 }}" >> .env
+          echo "HF_TOKEN12=${{ secrets.HF_TOKEN12 }}" >> .env
+          echo "HF_TOKEN13=${{ secrets.HF_TOKEN13 }}" >> .env
+          echo "HF_TOKEN14=${{ secrets.HF_TOKEN14 }}" >> .env
+          echo "HF_TOKEN15=${{ secrets.HF_TOKEN15 }}" >> .env
+          echo "HF_TOKEN16=${{ secrets.HF_TOKEN16 }}" >> .env
+          echo "HF_TOKEN17=${{ secrets.HF_TOKEN17 }}" >> .env
+          echo "HF_TOKEN18=${{ secrets.HF_TOKEN18 }}" >> .env
+          echo "HF_TOKEN19=${{ secrets.HF_TOKEN19 }}" >> .env
+          echo "HF_TOKEN20=${{ secrets.HF_TOKEN20 }}" >> .env
+          echo "HF_TOKEN21=${{ secrets.HF_TOKEN21 }}" >> .env
+          echo "HF_TOKEN22=${{ secrets.HF_TOKEN22 }}" >> .env
+          echo "HF_TOKEN23=${{ secrets.HF_TOKEN23 }}" >> .env
+          echo "HF_TOKEN24=${{ secrets.HF_TOKEN24 }}" >> .env
+
+      - name: Create images folder
+        run: mkdir -p images
+
+      - name: Run image generator
+        run: python newGen.py
+
+      - name: Upload images as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-images-${{ github.run_number }}
+          path: images/
+          retention-days: 7
+
+      - name: Upload prompt notes as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: prompt-notes-${{ github.run_number }}
+          path: prompt_notes.txt
+          retention-days: 7
