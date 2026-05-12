@@ -2,10 +2,12 @@ name: Stock Image Generator
 
 on:
   schedule:
-    # Runs every day at 6:00 AM Pakistan time (1:00 AM UTC)
-    - cron: '0 1 * * *'
+    - cron: '0 1 * * *'   # 6AM Pakistan time
+    - cron: '0 7 * * *'   # 12PM Pakistan time backup
   workflow_dispatch:
-    # Also allows manual trigger from GitHub
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   generate:
@@ -13,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -61,51 +63,81 @@ jobs:
         env:
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}    
 
-      - name: Create .env file from secrets
+      - name: Verify credentials file
         run: |
-          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
-          echo "DRIVE_FOLDER_ID=${{ secrets.DRIVE_FOLDER_ID }}" >> .env
-          echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
-          echo "HF_TOKEN1=${{ secrets.HF_TOKEN1 }}" >> .env
-          echo "HF_TOKEN2=${{ secrets.HF_TOKEN2 }}" >> .env
-          echo "HF_TOKEN3=${{ secrets.HF_TOKEN3 }}" >> .env
-          echo "HF_TOKEN4=${{ secrets.HF_TOKEN4 }}" >> .env
-          echo "HF_TOKEN5=${{ secrets.HF_TOKEN5 }}" >> .env
-          echo "HF_TOKEN6=${{ secrets.HF_TOKEN6 }}" >> .env
-          echo "HF_TOKEN7=${{ secrets.HF_TOKEN7 }}" >> .env
-          echo "HF_TOKEN8=${{ secrets.HF_TOKEN8 }}" >> .env
-          echo "HF_TOKEN9=${{ secrets.HF_TOKEN9 }}" >> .env
-          echo "HF_TOKEN10=${{ secrets.HF_TOKEN10 }}" >> .env
-          echo "HF_TOKEN11=${{ secrets.HF_TOKEN11 }}" >> .env
-          echo "HF_TOKEN12=${{ secrets.HF_TOKEN12 }}" >> .env
-          echo "HF_TOKEN13=${{ secrets.HF_TOKEN13 }}" >> .env
-          echo "HF_TOKEN14=${{ secrets.HF_TOKEN14 }}" >> .env
-          echo "HF_TOKEN15=${{ secrets.HF_TOKEN15 }}" >> .env
-          echo "HF_TOKEN16=${{ secrets.HF_TOKEN16 }}" >> .env
-          echo "HF_TOKEN17=${{ secrets.HF_TOKEN17 }}" >> .env
-          echo "HF_TOKEN18=${{ secrets.HF_TOKEN18 }}" >> .env
-          echo "HF_TOKEN19=${{ secrets.HF_TOKEN19 }}" >> .env
-          echo "HF_TOKEN20=${{ secrets.HF_TOKEN20 }}" >> .env
-          echo "HF_TOKEN21=${{ secrets.HF_TOKEN21 }}" >> .env
-          echo "HF_TOKEN22=${{ secrets.HF_TOKEN22 }}" >> .env
-          echo "HF_TOKEN23=${{ secrets.HF_TOKEN23 }}" >> .env
-          echo "HF_TOKEN24=${{ secrets.HF_TOKEN24 }}" >> .env
+          if [ -f credentials.json ]; then
+            echo "credentials.json exists"
+            python -c "import json; f=open('credentials.json'); d=json.load(f); print('Valid JSON'); print('Email:', d.get('client_email', 'NOT FOUND'))"
+          else
+            echo "ERROR: credentials.json not found"
+          fi
+
+      - name: Test Drive connection
+        run: |
+          python -c "
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+          import os
+          creds = service_account.Credentials.from_service_account_file(
+              'credentials.json',
+              scopes=['https://www.googleapis.com/auth/drive']
+          )
+          service = build('drive', 'v3', credentials=creds)
+          folder_id = os.getenv('DRIVE_FOLDER_ID')
+          print('Drive connected successfully')
+          print('Folder ID:', folder_id)
+          results = service.files().list(
+              q=f\"'{folder_id}' in parents\",
+              fields='files(id, name)'
+          ).execute()
+          print('Files in folder:', len(results.get('files', [])))
+          "
+        env:
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
 
       - name: Create images folder
         run: mkdir -p images
 
       - name: Run image generator
         run: python autoGen.py
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN1: ${{ secrets.HF_TOKEN1 }}
+          HF_TOKEN2: ${{ secrets.HF_TOKEN2 }}
+          HF_TOKEN3: ${{ secrets.HF_TOKEN3 }}
+          HF_TOKEN4: ${{ secrets.HF_TOKEN4 }}
+          HF_TOKEN5: ${{ secrets.HF_TOKEN5 }}
+          HF_TOKEN6: ${{ secrets.HF_TOKEN6 }}
+          HF_TOKEN7: ${{ secrets.HF_TOKEN7 }}
+          HF_TOKEN8: ${{ secrets.HF_TOKEN8 }}
+          HF_TOKEN9: ${{ secrets.HF_TOKEN9 }}
+          HF_TOKEN10: ${{ secrets.HF_TOKEN10 }}
+          HF_TOKEN11: ${{ secrets.HF_TOKEN11 }}
+          HF_TOKEN12: ${{ secrets.HF_TOKEN12 }}
+          HF_TOKEN13: ${{ secrets.HF_TOKEN13 }}
+          HF_TOKEN14: ${{ secrets.HF_TOKEN14 }}
+          HF_TOKEN15: ${{ secrets.HF_TOKEN15 }}
+          HF_TOKEN16: ${{ secrets.HF_TOKEN16 }}
+          HF_TOKEN17: ${{ secrets.HF_TOKEN17 }}
+          HF_TOKEN18: ${{ secrets.HF_TOKEN18 }}
+          HF_TOKEN19: ${{ secrets.HF_TOKEN19 }}
+          HF_TOKEN20: ${{ secrets.HF_TOKEN20 }}
+          HF_TOKEN21: ${{ secrets.HF_TOKEN21 }}
+          HF_TOKEN22: ${{ secrets.HF_TOKEN22 }}
+          HF_TOKEN23: ${{ secrets.HF_TOKEN23 }}
+          HF_TOKEN24: ${{ secrets.HF_TOKEN24 }}
 
       - name: Upload images as artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: generated-images-${{ github.run_number }}
           path: images/
           retention-days: 7
 
       - name: Upload prompt notes as artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: prompt-notes-${{ github.run_number }}
           path: prompt_notes.txt
