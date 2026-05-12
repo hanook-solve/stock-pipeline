@@ -24,7 +24,42 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Create credentials.json from secret
-        run: echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+        run: |
+          cat << 'CREDEOF' > credentials.json
+          ${{ secrets.GOOGLE_CREDENTIALS }}
+          CREDEOF
+
+      - name: Verify credentials file
+        run: |
+          if [ -f credentials.json ]; then
+            echo "credentials.json exists"
+            python -c "import json; f=open('credentials.json'); d=json.load(f); print('Valid JSON'); print('Email:', d.get('client_email', 'NOT FOUND'))"
+          else
+            echo "ERROR: credentials.json not found"
+          fi   
+
+      - name: Test Drive connection
+        run: |
+          python -c "
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+          import os
+          creds = service_account.Credentials.from_service_account_file(
+              'credentials.json',
+              scopes=['https://www.googleapis.com/auth/drive']
+          )
+          service = build('drive', 'v3', credentials=creds)
+          folder_id = os.getenv('DRIVE_FOLDER_ID')
+          print('Drive connected successfully')
+          print('Folder ID:', folder_id)
+          results = service.files().list(
+              q=f\"'{folder_id}' in parents\",
+              fields='files(id, name)'
+          ).execute()
+          print('Files in folder:', len(results.get('files', [])))
+          "
+        env:
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}    
 
       - name: Create .env file from secrets
         run: |
