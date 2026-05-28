@@ -3,27 +3,40 @@ name: Image Upscaler
 on:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   upscale:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install Pillow
         run: pip install pillow
 
+      - name: Check Pending folder
+        run: |
+          echo "Files in Pending folder:"
+          ls -la Pending/ || echo "Pending folder is empty or missing"
+
       - name: Run upscaler
         run: python upscaler_cloud.py
 
+      - name: Check Upscaled folder
+        run: |
+          echo "Files in Upscaled folder:"
+          ls -la Upscaled/ || echo "Upscaled folder is empty"
+
       - name: Upload upscaled images
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: upscaled-images
           path: Upscaled/

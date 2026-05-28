@@ -5,6 +5,8 @@ import os
 import time
 import json
 import random
+import io
+from PIL import Image
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2 import service_account
@@ -119,34 +121,68 @@ def agent_decide_category():
                 {
                     "role": "system",
                     "content": (
-                        "You are an autonomous Adobe Stock content strategist agent. "
-                        "Your job is to independently decide what stock image category "
-                        "and topics will generate the most downloads and revenue today. "
+                        "You are an elite Adobe Stock revenue strategist and commercial image intelligence agent. "
+                        "Your sole mission is to identify and generate the highest-revenue, highest-download "
+                        "stock image topics available in the market right now. "
+                        "You think like a top-earning stock contributor with deep knowledge of buyer behavior, "
+                        "design trends, advertising needs, and marketplace gaps. "
 
-                        "Think about: "
-                        "1. What season or month is it? (consider current global seasons) "
-                        "2. What holidays or events are coming up in the next 30-60 days? "
-                        "3. What evergreen categories always sell well? "
-                        "4. What niches are undersupplied on Adobe Stock right now? "
-                        "5. What topics have high commercial buyer demand? "
+                        "MARKET INTELLIGENCE — analyze all of these before deciding: "
+                        "1. SEASONAL FORECASTING: What season is it globally right now? "
+                        "   What holidays, events, or cultural moments are 30 to 90 days ahead? "
+                        "   Buyers purchase seasonal content weeks before the event — be ahead of the curve. "
+                        "2. BUYER INTENT: Who actually buys stock images? "
+                        "   Ad agencies, SaaS companies, bloggers, UI designers, packaging designers, "
+                        "   social media managers, marketers, template creators, editorial publishers. "
+                        "   What do THEY need this week? "
+                        "3. TREND AWARENESS: What visual styles are dominating in 2026? "
+                        "   Consider: AI and tech aesthetics, minimalist geometry, cyber and neon, "
+                        "   wellness and nature fusion, retro futurism, organic textures, dark luxury, "
+                        "   gradient abstracts, clean commercial whites, bold typographic backgrounds. "
+                        "4. UNDERSUPPLIED NICHES: What categories have HIGH buyer demand but LOW supply? "
+                        "   Avoid saturated categories. Find the gaps. "
+                        "5. COMMERCIAL USABILITY: Will this image work as a banner, ad background, "
+                        "   website hero, app UI background, packaging, or social media template? "
+                        "   If not commercially usable — skip it. "
+                        "6. DOWNLOAD PROBABILITY: Score each topic mentally on: "
+                        "   Demand (1-10), Visual Appeal (1-10), Competition Level (1-10 low is better), "
+                        "   Commercial Usability (1-10). Only include topics scoring 7 or above overall. "
 
-                        "Categories to rotate between: "
-                        "holiday backgrounds, nature and landscape, islamic and cultural, "
-                        "textures and surfaces, business and technology, food and drink, "
-                        "abstract backgrounds, sky and atmosphere, travel and architecture, "
-                        "health and wellness, seasonal themes, commercial backgrounds. "
+                        "CATEGORY INTELLIGENCE — rotate strategically, never repeat same category twice: "
+                        "holiday and seasonal backgrounds, islamic and cultural celebrations, "
+                        "nature and organic landscapes, abstract geometric backgrounds, "
+                        "dark luxury textures, technology and AI concepts, "
+                        "health wellness and mindfulness, business and finance visuals, "
+                        "food and beverage flatlay, architecture and urban atmosphere, "
+                        "sky cloudscape and weather, gradient and color field backgrounds, "
+                        "retro and vintage aesthetics, packaging and product backgrounds, "
+                        "editorial and news worthy themes, social media and content creation backgrounds. "
 
-                        "STRICT RULES: "
-                        "No people, no faces, no body parts. "
-                        "Backgrounds, textures, atmospheric scenes only. "
-                        "Each topic must be visually distinct from others. "
-                        "Topics must be 3 to 6 words each. "
-                        "Think commercially — what do buyers actually purchase? "
+                        "STRICT CONTENT RULES — non negotiable: "
+                        "Zero people, faces, hands, body parts, or human silhouettes. "
+                        "Zero text, logos, watermarks, brand names, or recognizable IP. "
+                        "Zero generic overused topics like plain bokeh or simple gradients. "
+                        "Every topic must be visually distinct from all others in the batch. "
+                        "Every topic must be banner friendly with negative space for text overlay. "
+                        "Every topic must be suitable for commercial advertising use. "
+                        "Every topic must sound like a real Adobe Stock search query buyers type. "
 
-                        "Return a JSON object with exactly 2 fields: "
-                        "category: the chosen category name as a string. "
-                        f"topics: array of exactly {IMAGE_COUNT} specific topic strings. "
-                        "Return raw JSON only. No markdown. No explanation. "
+                        "TOPIC QUALITY STANDARDS: "
+                        "3 to 6 words per topic. "
+                        "Specific enough to generate a distinct unique image. "
+                        "Broad enough to appeal to multiple buyer use cases. "
+                        "Mix of evergreen sellers and timely seasonal topics. "
+                        "Include at least 2 topics targeting underserved low competition niches. "
+                        "Include at least 2 topics targeting current design trends. "
+                        "Include at least 2 topics with strong advertising and marketing use cases. "
+                        "Vary compositions — mix overhead flat lay, wide panoramic, macro close up, "
+                        "dark moody atmospheric, bright airy minimal, and dramatic cinematic styles. "
+
+                        "OUTPUT FORMAT — critical: "
+                        "Return a JSON object with exactly 2 fields. "
+                        "category: the single best category name as a string. "
+                        f"topics: array of exactly {IMAGE_COUNT} topic strings. "
+                        "Raw JSON only. Zero markdown. Zero explanation. Zero extra text. "
                         "Format: {\"category\": \"...\", \"topics\": [\"topic1\", \"topic2\", ...]}"
                     )
                 },
@@ -207,62 +243,118 @@ def generate_prompt(topic, category):
                 {
                     "role": "system",
                     "content": (
-                        "You are a world class Adobe Stock image prompt engineer and SEO expert. "
-                        "For every topic return a JSON object with exactly 4 fields. "
+    # ================================================
+    # ROLE
+    # ================================================
+                        "You are a world-class Adobe Stock prompt engineer and SEO strategist. "
+                        "Your output directly affects commercial downloads and revenue. "
+                        "Every field you generate must be optimized for real buyer search behavior "
+                        "on Adobe Stock, Shutterstock, and Freepik. "
 
-                        "PROMPT FIELD — use this exact formula: "
-                        "[Subject]: clearly describe the main visual element. "
-                        "[Action/State]: describe what the subject is doing or its condition "
-                        "(glowing, falling, blooming, melting, flowing, scattered, arranged). "
-                        "[Environment/Background]: describe the setting and surroundings in detail. "
-                        "[Lighting & Atmosphere]: describe light source, direction, quality, and mood "
-                        "(soft golden backlight, dramatic rim lighting, diffused studio light, "
-                        "warm candlelight, cool moonlight, misty atmospheric haze). "
-                        "[Camera & Style Specs]: describe the shot technically "
-                        "(macro lens extreme close up, wide angle panorama, overhead flat lay, "
-                        "shallow depth of field, 85mm portrait lens, fisheye). "
+    # ================================================
+    # HARD CONSTRAINTS — checked first, no exceptions
+    # ================================================
+                        "ABSOLUTE RULES — violating any disqualifies the output: "
+                        "No people, faces, hands, body parts, or human silhouettes. "
+                        "No text, numbers, watermarks, logos, or brand names. "
+                        "No cartoons, anime, illustrations unless topic explicitly requires it. "
+                        "No random unrelated objects added to fill space. "
+                        "No copyrighted characters, symbols, or recognizable IP. "
+                        "Every image must be commercially licensable with no legal risk. "
 
-                        "Apply correct style per topic type: "
-                        "HOLIDAY/EVENT: warm cinematic atmosphere, bokeh lights, rich festive colors. "
-                        "NATURE/LANDSCAPE: photorealistic, golden or blue hour lighting, vast depth. "
-                        "ABSTRACT/BACKGROUND: clean geometry, smooth gradients, elegant minimal. "
-                        "BUSINESS/TECHNOLOGY: clean modern, cool blue tones, sharp professional. "
-                        "TEXTURE/SURFACE: macro mode, describe material finish color detail lighting. "
-                        "FOOD/DRINK: appetizing, studio lighting, overhead or 45 degree angle. "
-                        "CULTURAL/RELIGIOUS: respectful, atmospheric, symbolic, warm dignified. "
+    # ================================================
+    # PROMPT FIELD
+    # ================================================
+                        "PROMPT FIELD — build using this clean 5-part structure: "
+                        "SUBJECT: The single main visual element described with precision. "
+                        "STATE: What the subject is doing or its physical condition — "
+                        "use active descriptors: glowing, cascading, fractured, blooming, "
+                        "melting, crystallizing, scattered, suspended, woven, layered. "
+                        "ENVIRONMENT: The setting, surface, or background with specific detail — "
+                        "not just dark background but aged concrete wall with subtle grain. "
+                        "LIGHTING: Light source, direction, intensity, and emotional quality — "
+                        "raking side light revealing texture, warm diffused golden backlight, "
+                        "cold rim lighting with lens flare, dramatic chiaroscuro contrast, "
+                        "flat studio softbox, neon ambient glow, bioluminescent underglow. "
+                        "CAMERA AND STYLE: Lens type, angle, depth of field, and rendering style — "
+                        "extreme macro with shallow depth of field, overhead flat lay 90 degrees, "
+                        "wide cinematic panorama, 85mm portrait compression, fisheye distortion, "
+                        "tilt-shift miniature effect, long exposure motion blur, cross-polarized macro. "
 
-                        "UNIQUENESS RULE: avoid the most obvious interpretation. "
-                        "Find unexpected angle, unusual composition, or specific detail. "
-                        "Ask: has this exact image been made a thousand times? If yes — find different angle. "
+                        "STYLE RULES PER TOPIC TYPE: "
+                        "HOLIDAY AND EVENT: warm cinema tones, layered bokeh, rich saturated festive palette. "
+                        "NATURE AND LANDSCAPE: photorealistic, dramatic sky, environmental depth and scale. "
+                        "ABSTRACT AND BACKGROUND: intentional geometry, fluid gradients, purposeful negative space. "
+                        "BUSINESS AND TECHNOLOGY: cool clean tones, sharp lines, minimal modern aesthetic. "
+                        "TEXTURE AND SURFACE: macro mode only, describe material plus finish plus color plus grain. "
+                        "FOOD AND DRINK: appetizing warmth, controlled studio light, overhead or 45-degree angle. "
+                        "CULTURAL AND RELIGIOUS: dignified, atmospheric, symbolic objects, warm respectful palette. "
+                        "WELLNESS AND HEALTH: soft organic tones, natural light, calm serene atmosphere. "
+                        "DARK LUXURY: deep rich tones, gold or silver accents, dramatic shadow play. "
 
-                        "NEVER include: people, faces, hands, body parts, text, watermarks, "
-                        "logos, cartoons, anime, random unrelated objects. "
+                        "UNIQUENESS AND VARIATION RULES: "
+                        "Never produce the most obvious or overused interpretation of a topic. "
+                        "Rotate composition angles across a batch: overhead, eye-level, low angle, "
+                        "extreme close-up, wide establishing, detail fragment. "
+                        "Rotate time of day: golden hour, blue hour, midday, night, dusk, overcast. "
+                        "Rotate weather and atmosphere: crisp clear, misty fog, rain-soaked, backlit haze. "
+                        "Rotate material and surface: polished, matte, rough, translucent, weathered, frosted. "
+                        "If a topic has been generated a thousand times on stock sites — find a different angle, "
+                        "an unexpected material, an unusual lighting condition, or a detail fragment no one shoots. "
 
-                        "End prompt with: sharp focus, highly detailed, 4K resolution, "
-                        "Adobe Stock style, award winning photography. "
-                        "Keep prompt 70 to 90 words. "
+                        "PROMPT LENGTH AND QUALITY: "
+                        "Target 80 to 130 words for full visual richness. "
+                        "End with: sharp focus, hyper-detailed, 4K resolution, Adobe Stock commercial quality. "
+                        "Remove filler phrases: do not use award-winning photography or masterpiece. "
+                        "Every word must add visual or commercial information. "
 
-                        "TITLE FIELD: "
-                        "Professional Adobe Stock title. Minimum 5 words. Title Case. "
-                        "No punctuation at end. Most searched keyword FIRST. Specific not vague. "
+    # ================================================
+    # TITLE FIELD
+    # ================================================
+                        "TITLE FIELD RULES: "
+                        "Minimum 5 words. Maximum 70 characters. Title Case. No punctuation at end. "
+                        "Lead with the highest commercial-intent keyword naturally — not forced. "
+                        "Be specific and descriptive — buyers scan titles to confirm content. "
+                        "Bad: Beautiful Abstract Background Image. "
+                        "Good: Dark Marble Texture With Gold Veining Macro Shot. "
 
-                        "DESCRIPTION FIELD: "
+    # ================================================
+    # DESCRIPTION FIELD
+    # ================================================
+                        "DESCRIPTION FIELD RULES: "
                         "One to two sentences. Maximum 200 characters. "
-                        "Start with use case (Perfect for... or Ideal for...). "
-                        "Include 3 to 5 natural keywords. "
+                        "Open with primary use case: Perfect for, Ideal for, Great for. "
+                        "Embed 3 to 5 commercial-intent keywords naturally in the sentence. "
+                        "Focus on what a buyer will USE this image for — not just what it looks like. "
 
-                        "TAGS FIELD: "
-                        "Exactly 45 keywords for maximum Adobe Stock SEO coverage. "
-                        "All lowercase. Single words or 2 word phrases only. "
-                        "Order by search volume highest first. "
-                        "Cover: primary subject, style, mood, colors, use case, "
-                        "season, occasion, technical specs, broad category. "
-                        "No duplicates. No irrelevant tags. "
+    # ================================================
+    # TAGS FIELD
+    # ================================================
+                        "TAGS FIELD RULES: "
+                        "Generate between 40 and 50 tags — quality over rigid count. "
+                        "All lowercase. Single words or two-word phrases only. No sentences. "
+                        "Order strictly by commercial search volume — highest first. "
+                        "Cover all of these layers in order: "
+                        "1. Primary subject keywords — what is literally in the image. "
+                        "2. Style and mood — cinematic, minimal, moody, vibrant, dark, airy. "
+                        "3. Color palette — dominant and accent colors. "
+                        "4. Commercial use case — website background, social media, banner ad, packaging. "
+                        "5. Seasonal and occasion — if applicable. "
+                        "6. Technical descriptors — macro, overhead, panoramic, bokeh, texture. "
+                        "7. Broad category — nature, abstract, business, holiday, food. "
+                        "NO duplicates. NO near-synonym spam like background, backdrop, wallpaper all together. "
+                        "NO irrelevant tags added to reach a count. "
+                        "Every tag must reflect something genuinely visible or commercially relevant in the image. "
 
-                        "STRICT: Return raw JSON only. No markdown. No explanation. "
-                        "Exactly this format: "
-                        "{\"prompt\": \"...\", \"title\": \"...\", "
-                        "\"description\": \"...\", \"tags\": [\"tag1\", \"tag2\"]}"
+    # ================================================
+    # OUTPUT FORMAT — strict
+    # ================================================
+                        "OUTPUT FORMAT — non-negotiable: "
+                        "Return raw JSON only. "
+                        "No markdown fences. No explanatory text. No extra fields. No missing fields. "
+                        "Exactly 4 fields in exactly this key order: prompt, title, description, tags. "
+                        "Tags must be a JSON array of strings. "
+                        "Format: {\"prompt\": \"...\", \"title\": \"...\", \"description\": \"...\", \"tags\": [\"tag1\", \"tag2\", ...]}"
                     )
                 },
                 {
@@ -436,10 +528,26 @@ def save_image(topic, content, data=None, model_used="unknown", category=""):
     try:
         filename = topic.replace(" ", "_").replace("/", "_") + ".jpg"
         filepath = os.path.join("images", filename)
+        
 
-        with open(filepath, "wb") as f:
-            f.write(content)
-        print(f"  ✓ Saved locally: {filepath}")
+        # ── NEW: Process image before saving ──────────────────
+        img = Image.open(io.BytesIO(content)).convert('RGB')
+        img.save(
+            filepath,
+            format='JPEG',
+            quality=97,
+            dpi=(300, 300),
+            subsampling=0
+        )
+        
+        # Log file size so you can monitor
+        size_mb = os.path.getsize(filepath) / (1024 * 1024)
+        print(f"  ✓ Saved locally: {filepath} ({size_mb:.2f} MB)")
+        # ── END NEW ───────────────────────────────────────────
+
+        #with open(filepath, "wb") as f:
+        #    f.write(content)
+        #print(f"  ✓ Saved locally: {filepath}")
 
         # Upload to Google Drive
         upload_to_drive(filepath, filename)
