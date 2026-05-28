@@ -1,0 +1,30 @@
+name: Image Upscaler
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upscale:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Pillow
+        run: pip install pillow
+
+      - name: Run upscaler
+        run: python upscaler_cloud.py
+
+      - name: Upload upscaled images
+        uses: actions/upload-artifact@v3
+        with:
+          name: upscaled-images
+          path: Upscaled/
+          retention-days: 7
